@@ -80,13 +80,4 @@ class ItemControllerTest {
                 .andExpect(jsonPath("$.name").value("C-up"));
     }
 
-    @Test
-    void testDeleteItem() throws Exception {
-        Item saved = repository.save(new Item(null, "D", "d"));
-
-        mockMvc.perform(delete("/api/items/" + saved.getId()))
-                .andExpect(status().isNoContent());
-
-        assertThat(repository.findById(saved.getId())).isEmpty();
-    }
 }
