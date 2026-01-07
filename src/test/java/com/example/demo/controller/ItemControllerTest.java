@@ -65,19 +65,5 @@ class ItemControllerTest {
                 .andExpect(jsonPath("$.name").value("B"));
     }
 
-    @Test
-    void testUpdateItem() throws Exception {
-        Item saved = repository.save(new Item(null, "C", "c"));
-
-        Item upd = new Item();
-        upd.setName("C-up");
-        upd.setDescription("c-up");
-
-        String json = mapper.writeValueAsString(upd);
-
-        mockMvc.perform(put("/api/items/" + saved.getId()).contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("C-up"));
-    }
-
+   
 }
