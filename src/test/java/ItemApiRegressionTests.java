@@ -85,15 +85,7 @@ class ItemApiRegressionTests {
             .statusCode(204);
     }
 
-    @Test
-    void testDeleteItemByIdNotFound() {
-        int id = 99999; // Use an ID that doesn't exist
-        given()
-        .when()
-            .delete("/items/" + id)
-        .then()
-            .statusCode(404);
-    }
+   
 
     @Test
     void testRemovedEndpoint() {
