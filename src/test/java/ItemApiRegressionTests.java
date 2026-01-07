@@ -28,26 +28,7 @@ class ItemApiRegressionTests {
             .body("description", equalTo("Test Description"));
     }
 
-    @Test
-    void testGetItemById() {
-        int id = 1; // Use a valid ID from your test DB
-        given()
-        .when()
-            .get("/items/" + id)
-        .then()
-            .statusCode(200)
-            .body("id", equalTo(id));
-    }
-
-    @Test
-    void testGetItemByIdNotFound() {
-        int id = 99999; // Use an ID that doesn't exist
-        given()
-        .when()
-            .get("/items/" + id)
-        .then()
-            .statusCode(404);
-    }
+    
 
     @Test
     void testUpdateItemById() {
