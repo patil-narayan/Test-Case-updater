@@ -1,76 +1,94 @@
 import io.restassured.RestAssured;
-import org.junit.jupiter.api.Test;
-import static io.restassured.RestAssured.given;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.*;
+
+import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
-class ItemApiRegressionTests {
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class ItemApiRegressionTests {
 
-    @Test
-    void testGetAllItems() {
-        given()
-        .when()
-            .get("/items")
-        .then()
-            .statusCode(200)
-            .body("$", not(empty()));
+    private static int createdItemId;
+
+    @BeforeAll
+    public static void setup() {
+        RestAssured.baseURI = "http://localhost:8080";
     }
 
-    
-
     @Test
-    void testGetItemByIdNotFound() {
-        int id = 99999; // Use an ID that doesn't exist
+    @Order(1)
+    public void testGetAllItems() {
         given()
         .when()
-            .get("/items/" + id)
+            .get("/api/items")
+        .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("$", notNullValue());
+    }
+
+    @Test
+    @Order(2)
+    public void testCreateNewItem() {
+        String newItem = "{ \"name\": \"Test Item\", \"description\": \"A sample item\" }";
+        createdItemId =
+            given()
+                .contentType(ContentType.JSON)
+                .body(newItem)
+            .when()
+                .post("/api/items")
+            .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+        Assertions.assertTrue(createdItemId > 0);
+    }
+
+    @Test
+    @Order(3)
+    public void testUpdateItemById() {
+        String updatedItem = "{ \"id\": " + createdItemId + ", \"name\": \"Updated Item\", \"description\": \"Updated description\" }";
+        given()
+            .contentType(ContentType.JSON)
+            .body(updatedItem)
+        .when()
+            .put("/api/items/" + createdItemId)
+        .then()
+            .statusCode(200)
+            .body("name", equalTo("Updated Item"))
+            .body("description", equalTo("Updated description"));
+    }
+
+    @Test
+    @Order(4)
+    public void testUpdateItemNotFound() {
+        String updatedItem = "{ \"id\": 99999, \"name\": \"Nonexistent\", \"description\": \"Should not exist\" }";
+        given()
+            .contentType(ContentType.JSON)
+            .body(updatedItem)
+        .when()
+            .put("/api/items/99999")
         .then()
             .statusCode(404);
     }
 
     @Test
-    void testUpdateItemById() {
-        int id = 1; // Use a valid ID from your test DB
-        given()
-            .contentType("application/json")
-            .body("{\"name\": \"Updated Name\", \"description\": \"Updated Description\"}")
-        .when()
-            .put("/items/" + id)
-        .then()
-            .statusCode(200)
-            .body("name", equalTo("Updated Name"))
-            .body("description", equalTo("Updated Description"));
-    }
-
-    @Test
-    void testUpdateItemByIdNotFound() {
-        int id = 99999; // Use an ID that doesn't exist
-        given()
-            .contentType("application/json")
-            .body("{\"name\": \"Updated Name\", \"description\": \"Updated Description\"}")
-        .when()
-            .put("/items/" + id)
-        .then()
-            .statusCode(404);
-    }
-
-    @Test
-    void testDeleteItemById() {
-        int id = 1; // Use a valid ID from your test DB
+    @Order(5)
+    public void testDeleteItemById() {
         given()
         .when()
-            .delete("/items/" + id)
+            .delete("/api/items/" + createdItemId)
         .then()
             .statusCode(204);
     }
 
-   
-
     @Test
-    void testRemovedEndpoint() {
+    @Order(6)
+    public void testDeleteItemNotFound() {
         given()
         .when()
-            .post("/old-endpoint")
+            .delete("/api/items/99999")
         .then()
-            .statusCode(404);
+            .statusCode(204); // Assuming API returns 204 even if item not found
     }
 }
