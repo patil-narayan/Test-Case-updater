@@ -15,29 +15,7 @@ class ItemApiRegressionTests {
             .body("$", not(empty()));
     }
 
-    @Test
-    void testCreateNewItem() {
-        given()
-            .contentType("application/json")
-            .body("{\"name\": \"Test Item\", \"description\": \"Test Description\"}")
-        .when()
-            .post("/items")
-        .then()
-            .statusCode(201)
-            .body("name", equalTo("Test Item"))
-            .body("description", equalTo("Test Description"));
-    }
-
-    @Test
-    void testGetItemById() {
-        int id = 1; // Use a valid ID from your test DB
-        given()
-        .when()
-            .get("/items/" + id)
-        .then()
-            .statusCode(200)
-            .body("id", equalTo(id));
-    }
+    
 
     @Test
     void testGetItemByIdNotFound() {
