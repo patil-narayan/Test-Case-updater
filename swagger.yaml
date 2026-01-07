@@ -1,0 +1,63 @@
+openapi: 3.0.0
+info:
+  title: Item API
+  version: 1.0.0
+paths:
+  /api/items:
+    get:
+      summary: Get all items
+      responses:
+        '200':
+          description: List of items
+    post:
+      summary: Create a new item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '201':
+          description: Item created
+    put:
+      summary: Update item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: Item updated
+        '404':
+          description: Item not found
+    delete:
+      summary: Delete item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Item deleted
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
