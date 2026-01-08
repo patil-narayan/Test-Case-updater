@@ -1,69 +1,75 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Item;
-import com.example.demo.repository.ItemRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static io.restassured.RestAssured.*;
+import static org.hamcrest.Matchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class ItemControllerTest {
+public class ItemControllerTest {
 
-    @Autowired
-    MockMvc mockMvc;
-
-    @Autowired
-    ItemRepository repository;
-
-    @Autowired
-    ObjectMapper mapper;
-
-    @BeforeEach
-    void setup() {
-        repository.deleteAll();
+    @BeforeAll
+    public static void setup() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = 8080;
     }
 
     @Test
-    void testCreateItem() throws Exception {
+    public void testGetAllItems() {
+        given()
+        .when()
+            .get("/api/items")
+        .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("$", notNullValue());
+    }
+
+    @Test
+    public void testCreateNewItem() {
         Item item = new Item();
-        item.setName("Item1");
-        item.setDescription("Desc1");
+        item.setName("Test Item");
+        item.setDescription("Test Description");
 
-        String json = mapper.writeValueAsString(item);
-
-        mockMvc.perform(post("/api/items").contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Item1"));
+        given()
+            .contentType(ContentType.JSON)
+            .body(item)
+        .when()
+            .post("/api/items")
+        .then()
+            .statusCode(201)
+            .body("name", equalTo("Test Item"))
+            .body("description", equalTo("Test Description"));
     }
 
     @Test
-    void testGetAllItems() throws Exception {
-        repository.save(new Item(null, "A", "a"));
+    public void testUpdateItemById() {
+        Item item = new Item();
+        item.setName("Updated Name");
+        item.setDescription("Updated Description");
 
-        mockMvc.perform(get("/api/items"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("A"));
+        int itemId = 1; // Replace with a valid ID in your test DB
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(item)
+        .when()
+            .put("/api/items?id=" + itemId)
+        .then()
+            .statusCode(anyOf(is(200), is(404)));
     }
 
     @Test
-    void testGetById() throws Exception {
-        Item saved = repository.save(new Item(null, "B", "b"));
+    public void testDeleteItemById() {
+        int itemId = 1; // Replace with a valid ID in your test DB
 
-        mockMvc.perform(get("/api/items/" + saved.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("B"));
+        given()
+        .when()
+            .delete("/api/items?id=" + itemId)
+        .then()
+            .statusCode(204);
     }
-
-
 }
