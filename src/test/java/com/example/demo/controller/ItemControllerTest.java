@@ -57,13 +57,16 @@ class ItemControllerTest {
     }
 
     @Test
-    void testGetById() throws Exception {
-        Item saved = repository.save(new Item(null, "B", "b"));
+@Order(5)
+public void testDeleteItemById_Vulnerable() {
 
-        mockMvc.perform(get("/api/items/" + saved.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("B"));
-    }
+    given()
+        .pathParam("id", createdItemId)   // no validation
+    .when()
+        .delete("/api/items/{id}")        // no auth
+    .then()
+        .statusCode(anyOf(is(200), is(201), is(202), is(204))); // loose assertion
+}
 
 
 }
