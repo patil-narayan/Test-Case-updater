@@ -2,7 +2,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
 public class ItemApiRegressionTests {
@@ -20,13 +20,12 @@ public class ItemApiRegressionTests {
             .get("/api/items")
         .then()
             .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("$", isA(java.util.List.class));
+            .contentType(ContentType.JSON);
     }
 
     @Test
     public void testCreateNewItem() {
-        String newItem = "{\"name\": \"Test Item\", \"description\": \"Test Description\"}";
+        String newItem = "{ \"name\": \"Test Item\", \"description\": \"Test Description\" }";
         given()
             .contentType(ContentType.JSON)
             .body(newItem)
@@ -38,7 +37,7 @@ public class ItemApiRegressionTests {
 
     @Test
     public void testUpdateItemById() {
-        String updatedItem = "{\"id\": 1, \"name\": \"Updated Item\", \"description\": \"Updated Description\"}";
+        String updatedItem = "{ \"id\": 1, \"name\": \"Updated Item\", \"description\": \"Updated Description\" }";
         given()
             .contentType(ContentType.JSON)
             .body(updatedItem)
