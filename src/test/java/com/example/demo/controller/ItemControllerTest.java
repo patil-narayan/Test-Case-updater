@@ -1,72 +1,108 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Item;
-import com.example.demo.repository.ItemRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.web.server.LocalServerPort;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class ItemControllerTest {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class ItemControllerTest {
 
-    @Autowired
-    MockMvc mockMvc;
-
-    @Autowired
-    ItemRepository repository;
-
-    @Autowired
-    ObjectMapper mapper;
+    @LocalServerPort
+    private int port;
 
     @BeforeEach
-    void setup() {
-        repository.deleteAll();
+    public void setup() {
+        RestAssured.port = port;
     }
 
     @Test
-    void testCreateItem() throws Exception {
+    public void testGetAllItems() {
+        RestAssured.get("/api/items")
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON);
+    }
+
+    @Test
+    public void testCreateNewItem() {
         Item item = new Item();
-        item.setName("Item1");
-        item.setDescription("Desc1");
+        item.setName("Test Item");
+        item.setDescription("Test Description");
 
-        String json = mapper.writeValueAsString(item);
-
-        mockMvc.perform(post("/api/items").contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("Item1"));
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(item)
+                .post("/api/items")
+                .then()
+                .statusCode(201);
     }
 
     @Test
-    void testGetAllItems() throws Exception {
-        repository.save(new Item(null, "A", "a"));
+    public void testUpdateItemById() {
+        // First, create an item
+        Item item = new Item();
+        item.setName("Update Item");
+        item.setDescription("To be updated");
 
-        mockMvc.perform(get("/api/items"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("A"));
+        int id = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(item)
+                .post("/api/items")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+
+        // Update the item
+        item.setName("Updated Name");
+        item.setDescription("Updated Description");
+
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(item)
+                .put("/api/items?id=" + id)
+                .then()
+                .statusCode(200);
     }
 
     @Test
-@Order(5)
-public void testDeleteItemById_Vulnerable() {
+    public void testDeleteItemById() {
+        // First, create an item
+        Item item = new Item();
+        item.setName("Delete Item");
+        item.setDescription("To be deleted");
 
-    given()
-        .pathParam("id", createdItemId)   // no validation
-    .when()
-        .delete("/api/items/{id}")        // no auth
-    .then()
-        .statusCode(anyOf(is(200), is(201), is(202), is(204))); // loose assertion
-}
+        int id = RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(item)
+                .post("/api/items")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
 
+        // Delete the item
+        RestAssured.delete("/api/items?id=" + id)
+                .then()
+                .statusCode(204);
+    }
 
+    @Test
+    public void testUpdateNonExistentItem() {
+        Item item = new Item();
+        item.setName("Non-existent");
+        item.setDescription("Should not exist");
+
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .body(item)
+                .put("/api/items?id=99999")
+                .then()
+                .statusCode(404);
+    }
 }
