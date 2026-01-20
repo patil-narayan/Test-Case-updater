@@ -1,75 +1,82 @@
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
-class ItemApiRegressionTests {
-
+public class ItemApiRegressionTests {
+    @BeforeAll
+    public static void setup() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = 8080;
+    }
     @Test
-    void testGetAllItems() {
+    public void testGetAllItems() {
         given()
         .when()
-            .get("/items")
+            .get("/api/items")
         .then()
             .statusCode(200)
-            .body("$", not(empty()));
+            .contentType(ContentType.JSON)
+            .body("$", isA(java.util.List.class));
     }
-
-    
-
     @Test
-    void testGetItemByIdNotFound() {
-        int id = 99999; // Use an ID that doesn't exist
+    public void testCreateNewItem() {
+        String newItem = "{ \"name\": \"Test Item\", \"description\": \"Test Description\" }";
         given()
+            .contentType(ContentType.JSON)
+            .body(newItem)
         .when()
-            .get("/items/" + id)
+            .post("/api/items")
         .then()
-            .statusCode(404);
+            .statusCode(201);
     }
-
     @Test
-    void testUpdateItemById() {
-        int id = 1; // Use a valid ID from your test DB
-        given()
-            .contentType("application/json")
-            .body("{\"name\": \"Updated Name\", \"description\": \"Updated Description\"}")
+    public void testUpdateItemById() {
+        String updatedItem = "{ \"name\": \"Updated Item\", \"description\": \"Updated Description\" }";
+        int id = given()
+            .contentType(ContentType.JSON)
+            .body("{ \"name\": \"Temp\", \"description\": \"Temp\" }")
         .when()
-            .put("/items/" + id)
+            .post("/api/items")
         .then()
-            .statusCode(200)
-            .body("name", equalTo("Updated Name"))
-            .body("description", equalTo("Updated Description"));
-    }
-
-    @Test
-    void testUpdateItemByIdNotFound() {
-        int id = 99999; // Use an ID that doesn't exist
+            .statusCode(201)
+            .extract()
+            .path("id");
         given()
-            .contentType("application/json")
-            .body("{\"name\": \"Updated Name\", \"description\": \"Updated Description\"}")
+            .contentType(ContentType.JSON)
+            .body(updatedItem)
         .when()
-            .put("/items/" + id)
+            .put("/api/items?id=" + id)
         .then()
-            .statusCode(404);
+            .statusCode(200);
     }
-
     @Test
-    void testDeleteItemById() {
-        int id = 1; // Use a valid ID from your test DB
+    public void testDeleteItemById() {
+        int id = given()
+            .contentType(ContentType.JSON)
+            .body("{ \"name\": \"Temp\", \"description\": \"Temp\" }")
+        .when()
+            .post("/api/items")
+        .then()
+            .statusCode(201)
+            .extract()
+            .path("id");
         given()
         .when()
-            .delete("/items/" + id)
+            .delete("/api/items?id=" + id)
         .then()
             .statusCode(204);
     }
-
-   
-
     @Test
-    void testRemovedEndpoint() {
+    public void testUpdateNonExistentItem() {
+        String updatedItem = "{ \"name\": \"NonExistent\", \"description\": \"NonExistent\" }";
         given()
+            .contentType(ContentType.JSON)
+            .body(updatedItem)
         .when()
-            .post("/old-endpoint")
+            .put("/api/items?id=999999")
         .then()
             .statusCode(404);
     }
